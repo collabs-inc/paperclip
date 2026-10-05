@@ -1,0 +1,8 @@
+{
+  "name": "Paperclip",
+  "description": "Manage agent teams, companies, tasks, approvals and budgets using this machine's coding agents.",
+  "icon": "ui/public/favicon.svg",
+  "platforms": ["linux"],
+  "install": "sh cube/install.sh",
+  "start": "sh cube/start.sh"
+}
