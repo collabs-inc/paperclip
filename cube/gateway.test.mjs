@@ -28,6 +28,16 @@ test('Cube gateway forwards HTTP and WebSockets and rejects foreign origins', as
     assert.equal((await request({ headers: { Host: 'evil.example' } })).status, 403);
     assert.equal((await request({ headers: { 'Sec-Fetch-Site': 'same-site' } })).status, 403);
     assert.equal((await request({ headers: { 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'iframe' } })).status, 200);
+    // A controlling service worker's fetch(event.request) retains navigation
+    // mode but Chromium changes the original iframe destination to empty.
+    const workerNavigation = { 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'empty' };
+    assert.equal((await request({ headers: workerNavigation })).status, 200, 'service-worker iframe navigation');
+    assert.equal((await request({ headers: { ...workerNavigation, 'Sec-Fetch-Site': 'same-site' } })).status, 200);
+    assert.equal((await request({ headers: { ...workerNavigation, 'Sec-Fetch-Mode': 'cors' } })).status, 403);
+    assert.equal((await request({ headers: { ...workerNavigation, 'Sec-Fetch-Mode': 'no-cors' } })).status, 403);
+    assert.equal((await request({ headers: { ...workerNavigation, Origin: 'https://evil.example' } })).status, 403);
+    assert.equal((await request({ method: 'POST', headers: workerNavigation })).status, 403);
+    assert.equal((await request({ method: 'OPTIONS', headers: workerNavigation })).status, 403);
     assert.equal((await request({ headers: { Connection: 'Upgrade', Upgrade: 'test', Origin: `https://${host}` } })).status, 101);
     assert.equal((await request({ headers: { Connection: 'Upgrade', Upgrade: 'test', Origin: 'https://evil.example' } })).status, 403);
     assert.equal((await request({ headers: { Connection: 'Upgrade', Upgrade: 'test' } })).status, 403);

@@ -23,7 +23,11 @@ export function allowed(req, websocket = false) {
   if (websocket && req.headers.origin !== origin) return false;
   const unsafe = websocket || !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
   if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site'])) {
-    if (unsafe || !['document', 'iframe'].includes(req.headers['sec-fetch-dest'])) return false;
+    // Service workers forwarding an iframe navigation preserve navigate mode
+    // but send an empty destination. Scripts cannot set this browser-controlled
+    // mode on ordinary fetches, so it does not admit cross-site API requests.
+    const workerNavigation = req.method === 'GET' && req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'empty';
+    if (unsafe || (!['document', 'iframe'].includes(req.headers['sec-fetch-dest']) && !workerNavigation)) return false;
   }
   return true;
 }
